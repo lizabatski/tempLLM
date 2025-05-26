@@ -9,6 +9,7 @@ from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 from transformers import set_seed
 from models.TabLLM import TabLLM
 from utils import load_dataset
+from imblearn.over_sampling import SMOTE
 
 # early stopping
 class EarlyStopping:
@@ -29,13 +30,14 @@ class EarlyStopping:
                 self.early_stop = True
 
 # output path
-DATASET = "heart_disease"
+DATASET = "parkinsons"
 RESULTS_DIR = f"results/{DATASET}"
 os.makedirs(RESULTS_DIR, exist_ok=True)
 set_seed(42)
 
 # load the data
 train_x, val_x, test_x, train_y, val_y, test_y = load_dataset(DATASET)
+
 
 # grid searcg
 dropouts = [0.2, 0.3]
