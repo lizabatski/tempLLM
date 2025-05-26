@@ -70,7 +70,7 @@ for dropout, lr, llm_layers in product(dropouts, lrs, llm_layers_list):
     val_losses = []
     val_accuracies = []
 
-    for epoch in range(15):
+    for epoch in range(30):
         model.train()
         optimizer.zero_grad()
         outputs = model(train_x)

@@ -15,7 +15,6 @@ df = df.replace("?", pd.NA)
 df = df.dropna()
 df = df.apply(pd.to_numeric)
 
-df["target"] = (df["target"] > 0).astype(int)
 
 os.makedirs("data", exist_ok=True)
 df.to_csv("data/heart_disease.csv", index=False)
