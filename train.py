@@ -39,7 +39,7 @@ set_seed(42)
 train_x, val_x, test_x, train_y, val_y, test_y = load_dataset(DATASET)
 
 
-# grid searcg
+# grid search
 dropouts = [0.2, 0.3]
 lrs = [1e-3, 2e-4]
 llm_layers_list = [1, 2]
