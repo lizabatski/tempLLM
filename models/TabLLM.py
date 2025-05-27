@@ -11,6 +11,8 @@ class TabLLM(nn.Module):
         self.n_vars = configs.n_vars
         self.prompt = prompt
         self.llm_layers = configs.llm_layers
+
+
         self.dropout = nn.Dropout(configs.dropout)
         self.task_name = configs.task_name
 
@@ -22,6 +24,13 @@ class TabLLM(nn.Module):
 
         self.llm = GPT2Model.from_pretrained("gpt2", config=self.gpt2_config)
         self.tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
+
+        if configs.freeze_llm:
+            print("Freezing all LLM parameters.")
+            for param in self.llm.parameters():
+                param.requires_grad = False
+        else:
+            print("Fine tuning")
 
        
         if self.tokenizer.pad_token is None:

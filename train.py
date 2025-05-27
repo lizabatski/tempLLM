@@ -30,7 +30,7 @@ class EarlyStopping:
                 self.early_stop = True
 
 # output path
-DATASET = "parkinsons"
+DATASET = "breast_cancer"
 RESULTS_DIR = f"results/{DATASET}"
 os.makedirs(RESULTS_DIR, exist_ok=True)
 set_seed(42)
@@ -62,10 +62,15 @@ for dropout, lr, llm_layers in product(dropouts, lrs, llm_layers_list):
         dropout=dropout,
         task_name="classification",
         llm_layers=llm_layers,
+        freeze_llm = True
     )
+    mode_suffix = "_frozen" if config.freeze_llm else "_finetuned"
+
     model = TabLLM(config, prompt=f"Classify {DATASET} dataset row:")
     criterion = nn.CrossEntropyLoss()
-    optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+    optimizer = torch.optim.Adam(
+    filter(lambda p: p.requires_grad, model.parameters()),
+    lr=lr)
     early_stopper = EarlyStopping(patience=3)
 
     train_losses = []
@@ -106,8 +111,8 @@ for dropout, lr, llm_layers in product(dropouts, lrs, llm_layers_list):
         best_val_accuracies = val_accuracies
 
 # saving best model 
-torch.save(best_model_state, f"{RESULTS_DIR}/{DATASET}_best_model.pt")
-with open(f"{RESULTS_DIR}/{DATASET}_best_model_params.txt", "w") as f:
+torch.save(best_model_state, f"{RESULTS_DIR}/{DATASET}_best_model{mode_suffix}.pt")
+with open(f"{RESULTS_DIR}/{DATASET}_best_model_params{mode_suffix}.txt", "w") as f:
     f.write(f"Best Val Accuracy: {best_val_acc:.4f}\n")
     f.write("Best Hyperparameters:\n")
     for k, v in best_hparams.items():
@@ -118,16 +123,18 @@ print("Saved best model and hyperparameters.")
 
 # on test set
 print("\nEvaluating best model on test set...")
-# === Rebuild model with best hyperparameters before loading ===
+
 best_config = Namespace(
     num_classes=len(torch.unique(train_y)),
     n_vars=train_x.shape[1],
     dropout=best_hparams["dropout"],
     task_name="classification",
     llm_layers=best_hparams["llm_layers"],
+    freeze_llm=True  
 )
+
 model = TabLLM(best_config, prompt=f"Classify {DATASET} dataset row:")
-model.load_state_dict(torch.load(f"{RESULTS_DIR}/{DATASET}_best_model.pt"))
+model.load_state_dict(torch.load(f"{RESULTS_DIR}/{DATASET}_best_model{mode_suffix}.pt"))
 model.eval()
 with torch.no_grad():
     test_outputs = model(test_x)
@@ -139,12 +146,12 @@ with torch.no_grad():
     disp = ConfusionMatrixDisplay(confusion_matrix=cm)
     disp.plot(cmap='Blues')
     plt.title("Confusion Matrix")
-    plt.savefig(f"{RESULTS_DIR}/{DATASET}_confusion_matrix.png")
+    plt.savefig(f"{RESULTS_DIR}/{DATASET}_confusion_matrix{mode_suffix}.png")
     plt.show(block=False)
     plt.pause(2)
     plt.close()
 
-# === Plot loss and accuracy curves ===
+
 if len(best_train_losses) > 1:
     epochs = list(range(1, len(best_train_losses) + 1))
     plt.figure(figsize=(12, 5))
@@ -167,7 +174,7 @@ if len(best_train_losses) > 1:
     plt.legend()
 
     plt.tight_layout()
-    plt.savefig(f"{RESULTS_DIR}/{DATASET}_training_metrics.png")
+    plt.savefig(f"{RESULTS_DIR}/{DATASET}_training_metrics{mode_suffix}.png")
     plt.show(block=False)
     plt.pause(2)
     plt.close()
